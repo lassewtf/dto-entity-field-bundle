@@ -38,8 +38,9 @@ final class DtoJsonTypeRuntime
 
         $codec = self::$container->get('nano_dto_json_entity_field.runtime_codec');
         \assert($codec instanceof DtoJsonCodecInterface);
+        self::$codec = $codec;
 
-        return $codec;
+        return self::$codec;
     }
 
     public static function reset(): void

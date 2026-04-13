@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nano\DtoJsonEntityFieldBundle;
 
-use Doctrine\DBAL\Types\Type;
 use Nano\DtoJsonEntityFieldBundle\Attribute\EntityFieldDtoType;
 use Nano\DtoJsonEntityFieldBundle\DependencyInjection\Compiler\EnableTypedFieldMapperPass;
 use Nano\DtoJsonEntityFieldBundle\DependencyInjection\Compiler\RegisterEntityFieldDtoPass;
@@ -66,13 +65,27 @@ final class NanoDtoJsonEntityFieldBundle extends AbstractBundle
         $container->addCompilerPass(new RegisterEntityFieldDtoPass());
     }
 
+    public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
+    {
+        if (!$builder->hasExtension('doctrine') || !$this->shouldRegisterDoctrineType($builder)) {
+            return;
+        }
+
+        $builder->prependExtensionConfig('doctrine', [
+            'dbal' => [
+                'types' => [
+                    DtoJsonType::NAME => DtoJsonType::class,
+                ],
+            ],
+        ]);
+    }
+
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $container->import(__DIR__.'/../config/services.php');
 
         $builder->setParameter('nano_dto_json_entity_field.envelope.version', $config['envelope']['version']);
         $builder->setParameter('nano_dto_json_entity_field.registry.mappings', $config['registry']['mappings']);
-        $builder->setParameter('nano_dto_json_entity_field.doctrine.register_type', $config['doctrine']['register_type']);
         $builder->setParameter('nano_dto_json_entity_field.doctrine.enable_typed_field_mapper', $config['doctrine']['enable_typed_field_mapper']);
     }
 
@@ -83,16 +96,6 @@ final class NanoDtoJsonEntityFieldBundle extends AbstractBundle
             return;
         }
 
-        if ($container->hasParameter('nano_dto_json_entity_field.doctrine.register_type')
-            && true === $container->getParameter('nano_dto_json_entity_field.doctrine.register_type')
-        ) {
-            if (Type::hasType(DtoJsonType::NAME)) {
-                Type::overrideType(DtoJsonType::NAME, new DtoJsonType());
-            } else {
-                Type::addType(DtoJsonType::NAME, new DtoJsonType());
-            }
-        }
-
         if ($container->has('nano_dto_json_entity_field.runtime_codec')) {
             DtoJsonTypeRuntime::setContainer($container);
         }
@@ -101,5 +104,18 @@ final class NanoDtoJsonEntityFieldBundle extends AbstractBundle
     public function shutdown(): void
     {
         DtoJsonTypeRuntime::reset();
+    }
+
+    private function shouldRegisterDoctrineType(ContainerBuilder $builder): bool
+    {
+        $registerType = true;
+
+        foreach ($builder->getExtensionConfig($this->getContainerExtension()->getAlias()) as $config) {
+            if (isset($config['doctrine']['register_type'])) {
+                $registerType = (bool) $config['doctrine']['register_type'];
+            }
+        }
+
+        return $registerType;
     }
 }

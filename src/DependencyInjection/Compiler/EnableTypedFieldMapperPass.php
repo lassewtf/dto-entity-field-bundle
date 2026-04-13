@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nano\DtoJsonEntityFieldBundle\DependencyInjection\Compiler;
 
+use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\IdGeneratorPass;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
@@ -18,11 +19,8 @@ final class EnableTypedFieldMapperPass implements CompilerPassInterface
             return;
         }
 
-        foreach ($container->getDefinitions() as $id => $definition) {
-            if (!str_starts_with($id, 'doctrine.orm.') || !str_ends_with($id, '_configuration')) {
-                continue;
-            }
-
+        foreach ($container->findTaggedServiceIds(IdGeneratorPass::CONFIGURATION_TAG) as $id => $_tags) {
+            $definition = $container->getDefinition($id);
             $definition->addMethodCall('setTypedFieldMapper', [
                 new Reference('nano_dto_json_entity_field.doctrine.chain_typed_field_mapper'),
             ]);

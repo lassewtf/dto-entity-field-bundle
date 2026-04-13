@@ -29,10 +29,6 @@ final readonly class DtoJsonCodec implements DtoJsonCodecInterface
             throw new InvalidDtoPayloadException('DTO normalization must return an array.');
         }
 
-        if (\array_key_exists('_dto', $normalized)) {
-            throw new InvalidDtoPayloadException('The "_dto" key is reserved for envelope metadata.');
-        }
-
         unset($normalized['instanceUuid']);
 
         return $this->envelopeFactory
