@@ -1,19 +1,18 @@
 # NanoDtoJsonEntityFieldBundle Docs
 
-## Overview
-
-`NanoDtoJsonEntityFieldBundle` provides a generic Doctrine `dto_json` field for Symfony applications. It stores DTO payloads as JSON envelopes in the database and restores typed immutable DTO objects in PHP.
+`NanoDtoJsonEntityFieldBundle` provides a Doctrine `dto_json` field for Symfony applications. It stores immutable DTOs as JSON envelopes and restores the concrete DTO type through a tag registry.
 
 ## Documentation
 
 - [README](../README.md)
-- [RFC: Symfony Bundle für generisches `dto_json` Doctrine-ORM-Field](./symfony-dto-json-bundle-rfc.md)
-- [Agent Brief: Symfony Bundle für generisches `dto_json`-Doctrine-Field](./symfony-dto-json-bundle-agent-brief.md)
+- [Usage](./usage.md)
+- [Architecture](./architecture.md)
 
-## Key Concepts
+## Current Behavior
 
-- DTO classes extend `AbstractEntityFieldDto`
-- DTO classes declare their storage tag via `#[EntityFieldDtoType(...)]`
-- DTO discovery happens through Symfony service loading plus bundle autoconfiguration
-- Doctrine persists a technical JSON envelope containing `_dto` metadata and `data`
-- The concrete DTO class is resolved through the tag registry, not serializer discriminators
+- DTOs extend `AbstractEntityFieldDto`
+- DTOs declare their storage tag via `#[EntityFieldDtoType(...)]`
+- DTO services are discovered through Symfony service loading and bundle autoconfiguration
+- `dto_json` is registered as a Doctrine DBAL type through DoctrineBundle configuration
+- The bundle uses the application serializer service by default
+- The JSON payload stores `_dto.tag`, `_dto.instanceUuid`, `_dto.version`, and `data`

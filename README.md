@@ -1,6 +1,6 @@
 # NanoDtoJsonEntityFieldBundle
 
-`NanoDtoJsonEntityFieldBundle` provides a generic Doctrine `dto_json` field for Symfony applications. Database values are stored as JSON envelopes, while PHP code works with immutable DTO objects.
+`NanoDtoJsonEntityFieldBundle` provides a Doctrine `dto_json` field for Symfony applications. Database values are stored as JSON envelopes, while PHP code works with immutable DTO objects resolved through a tag registry.
 
 ## Features
 
@@ -11,13 +11,55 @@
 - Optional Doctrine `TypedFieldMapper`
 - Strict envelope validation and project-grade exceptions
 
-## Installation
+## Installation and Local Usage
 
 ```bash
 composer require nano/dto-json-entity-field-bundle
 ```
 
 Symfony Flex will register the bundle automatically. Without Flex, register `Nano\DtoJsonEntityFieldBundle\NanoDtoJsonEntityFieldBundle` manually.
+
+To use a local checkout before consuming the package from Packagist, add a `path` repository in the host project's `composer.json`:
+
+```json
+{
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../dto-entity-field-bundle",
+      "options": {
+        "symlink": true
+      }
+    }
+  ],
+  "require": {
+    "nano/dto-json-entity-field-bundle": "*@dev"
+  }
+}
+```
+
+Then run:
+
+```bash
+composer update nano/dto-json-entity-field-bundle
+```
+
+## Bundle Configuration
+
+Create `config/packages/nano_dto_json_entity_field.yaml`:
+
+```yaml
+nano_dto_json_entity_field:
+  doctrine:
+    register_type: true
+    enable_typed_field_mapper: false
+  envelope:
+    version: 1
+```
+
+`register_type` registers the Doctrine DBAL type `dto_json`.
+
+`enable_typed_field_mapper` enables automatic Doctrine field type assignment for DTO-typed properties.
 
 ## DTO Definition
 
@@ -44,16 +86,20 @@ final readonly class ProductAddedDto extends AbstractEntityFieldDto
 }
 ```
 
-## Host Project Service Loading
+## DTO Discovery Through Symfony Services
 
 DTO discovery relies on Symfony container services. The host project must load DTO classes through its normal `services` configuration so the bundle's compiler pass can see them.
 
 ```yaml
 services:
-  App\Dto\:
-    resource: '../src/Dto/'
-    autowire: false
+  App\:
+    resource: '../src/'
+    autowire: true
     autoconfigure: true
+    exclude:
+      - '../src/DependencyInjection/'
+      - '../src/Entity/'
+      - '../src/Kernel.php'
 ```
 
 Classes carrying `#[EntityFieldDtoType(...)]` are automatically tagged by the bundle and registered in the DTO registry.
@@ -99,17 +145,6 @@ final class Order
 }
 ```
 
-## Bundle Configuration
-
-```yaml
-nano_dto_json_entity_field:
-  doctrine:
-    register_type: true
-    enable_typed_field_mapper: false
-  envelope:
-    version: 1
-```
-
 Optional fallback if the host project deliberately does not load DTOs as services:
 
 ```yaml
@@ -136,3 +171,9 @@ When enabled, Doctrine fields typed as `AbstractEntityFieldDto` or a subclass ca
 composer install
 vendor/bin/phpunit
 ```
+
+## Documentation
+
+- [docs/index.md](./docs/index.md)
+- [docs/usage.md](./docs/usage.md)
+- [docs/architecture.md](./docs/architecture.md)
